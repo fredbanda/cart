@@ -1,58 +1,62 @@
-import React from 'react';
-import logo from './logo.svg';
-import { Counter } from './features/counter/Counter';
-import './App.css';
+import React, { useEffect } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import "./App.css";
+import Auth from "./components/Auth";
+import Layout from "./components/Layout";
+import Notification from "./components/Notification";
+import { uiActions } from "./store/ui-slice";
+
+let isFirstRender = true;
 
 function App() {
+  const dispatch = useDispatch();
+  const notification = useSelector(state => state.ui.notification)
+
+  const cart = useSelector(state => state.cart); 
+  const isLoggedIn = useSelector((state) => state.auth.isLoggedIn);
+
+  useEffect(() => {
+    if (isFirstRender) {
+      isFirstRender = false;
+        return;
+    }
+    const sendRequest = async () => {
+      // send state as sending a request
+
+      const res = await fetch(
+      'https://redux-http-12e6d-default-rtdb.firebaseio.com/cartItems.json',
+      {
+      method: "PUT",
+      body: JSON.stringify(cart)  
+    }
+    );
+    const data = await res.json();
+    // Send state as Request is successful
+        dispatch(uiActions.showNotification({
+        open: true,
+        message: "Request Sent Successfully to Database",
+        type: 'success'
+      }))
+    };
+    sendRequest().catch(err=> {
+      // Send state as error
+      dispatch(uiActions.showNotification({
+        open: true,
+        message: "Sending Request Failed",
+        type: 'error'
+      }))
+    });
+
+
+  },[cart])
   return (
     <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <Counter />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <span>
-          <span>Learn </span>
-          <a
-            className="App-link"
-            href="https://reactjs.org/"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            React
-          </a>
-          <span>, </span>
-          <a
-            className="App-link"
-            href="https://redux.js.org/"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Redux
-          </a>
-          <span>, </span>
-          <a
-            className="App-link"
-            href="https://redux-toolkit.js.org/"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Redux Toolkit
-          </a>
-          ,<span> and </span>
-          <a
-            className="App-link"
-            href="https://react-redux.js.org/"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            React Redux
-          </a>
-        </span>
-      </header>
+    {notification && <Notification type={notification.type} message={notification.message} />}
+     {!isLoggedIn && <Auth />}
+{isLoggedIn && <Layout />}
     </div>
   );
 }
 
 export default App;
+
